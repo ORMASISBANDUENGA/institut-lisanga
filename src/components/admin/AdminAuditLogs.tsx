@@ -4,9 +4,10 @@ import { History, Shield, Search, CheckCircle2, Clock } from 'lucide-react';
 
 export const AdminAuditLogs: React.FC = () => {
   const { auditLogs } = useApp();
+  const safeLogs = auditLogs || [];
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredLogs = auditLogs.filter((log) => {
+  const filteredLogs = safeLogs.filter((log) => {
     const author = log.performedByName || log.userName || '';
     const action = log.action || '';
     const details = log.details || '';

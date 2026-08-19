@@ -15,9 +15,10 @@ import {
 export const StudentRepechage: React.FC = () => {
   const { grades, currentStudent, currentPerson } = useApp();
 
+  const safeGrades = grades || [];
   // Filter subjects where average < 10/20 (Repêchage / Seconde session)
-  const failedSubjects = grades.filter((g) => g.average < 10);
-  const passedSubjects = grades.filter((g) => g.average >= 10);
+  const failedSubjects = safeGrades.filter((g) => (g.average || 0) < 10);
+  const passedSubjects = safeGrades.filter((g) => (g.average || 0) >= 10);
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">

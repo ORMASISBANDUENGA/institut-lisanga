@@ -39,6 +39,8 @@ export const StudentSchedule: React.FC = () => {
   const safePromotions = promotions || [];
   const safeOptions = options || [];
   const safeLevels = levels || [];
+  const safeScheduleSlots = scheduleSlots || [];
+  const safeRooms = rooms || [];
 
   const defaultClassId = useMemo(() => {
     const found = safeClasses.find(c => c.id === currentStudent?.currentClassId || c.fullName === currentStudent?.currentClassName);
@@ -79,14 +81,14 @@ export const StudentSchedule: React.FC = () => {
     if (!selectedClass) return [];
 
     // Check if slots already exist in database for this specific classId
-    const existing = scheduleSlots.filter(s => s.classId === selectedClass.id);
+    const existing = safeScheduleSlots.filter(s => s.classId === selectedClass.id);
     if (existing.length >= 6) {
       return existing;
     }
 
     // Otherwise generate the official Congolese curriculum schedule for this specific class
     const generated: ScheduleSlot[] = [];
-    const room = rooms.find(r => r.id === selectedClass.roomId) || rooms[0] || {
+    const room = safeRooms.find(r => r.id === selectedClass.roomId) || safeRooms[0] || {
       id: 'room-12',
       code: 'SAL-12',
       name: 'Salle 12',
@@ -358,7 +360,7 @@ export const StudentSchedule: React.FC = () => {
               {/* Promotion Level Buttons */}
               <div className="space-y-1.5">
                 {group.promos.map(promo => {
-                  const promoClasses = classes.filter(c => c.promotionId === promo.id);
+                  const promoClasses = safeClasses.filter(c => c.promotionId === promo.id);
                   const isPromoActive = promoClasses.some(c => c.id === selectedClassId);
 
                   return (

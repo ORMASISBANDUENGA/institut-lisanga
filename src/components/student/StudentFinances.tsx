@@ -30,9 +30,10 @@ export const StudentFinances: React.FC = () => {
   const [paymentSuccessMessage, setPaymentSuccessMessage] = useState<string | null>(null);
 
   // Current Promotion Fee schedule
+  const safeSchedules = promotionFeeSchedules || [];
   const currentFeeSchedule =
-    promotionFeeSchedules.find((s) => s.promotionName.toLowerCase().includes('4ème commerciale')) ||
-    promotionFeeSchedules[0];
+    safeSchedules.find((s) => s.promotionName?.toLowerCase().includes('4ème commerciale')) ||
+    safeSchedules[0];
 
   const safePayments = payments || [];
   const totalDueUSD = safePayments.reduce((acc, p) => acc + (Number(p.amountDue) || 0), 0);

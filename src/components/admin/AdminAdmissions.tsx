@@ -19,13 +19,15 @@ import {
 
 export const AdminAdmissions: React.FC = () => {
   const { admissions, updateAdmissionStatus, enrollCandidate, classes } = useApp();
-  const [selectedApp, setSelectedApp] = useState<AdmissionApplication | null>(admissions[0] || null);
+  const safeAdmissions = admissions || [];
+  const safeClasses = classes || [];
+  const [selectedApp, setSelectedApp] = useState<AdmissionApplication | null>(safeAdmissions[0] || null);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [selectedClassId, setSelectedClassId] = useState<string>(classes[0]?.id || 'class-7co-a');
+  const [selectedClassId, setSelectedClassId] = useState<string>(safeClasses[0]?.id || 'class-7co-a');
   const [showSuccessBanner, setShowSuccessBanner] = useState<string | null>(null);
 
-  const filteredAdmissions = admissions.filter((app) => {
+  const filteredAdmissions = safeAdmissions.filter((app) => {
     const candidateFullName = `${app.candidateFirstName} ${app.candidateLastName}`;
     const matchesFilter = filterStatus === 'ALL' || app.status === filterStatus;
     const matchesSearch =

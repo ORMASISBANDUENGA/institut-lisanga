@@ -16,7 +16,8 @@ import {
 export const StudentDiscipline: React.FC = () => {
   const { disciplineSanctions, currentStudent, currentPerson } = useApp();
 
-  const studentSanctions = disciplineSanctions.filter((s) => s.studentId === currentStudent.id);
+  const safeSanctions = disciplineSanctions || [];
+  const studentSanctions = safeSanctions.filter((s) => s.studentId === currentStudent?.id);
   const activeSanctions = studentSanctions.filter((s) => !s.isResolved);
 
   return (

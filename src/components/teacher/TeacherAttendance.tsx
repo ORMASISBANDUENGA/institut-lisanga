@@ -73,9 +73,10 @@ export const TeacherAttendance: React.FC = () => {
     setTimeout(() => setSavedSuccess(false), 2500);
   };
 
-  const presentCount = students.filter((s) => s.status === 'PRESENT').length;
-  const lateCount = students.filter((s) => s.status === 'LATE').length;
-  const absentCount = students.filter((s) => s.status.includes('ABSENT')).length;
+  const safeStudents = students || [];
+  const presentCount = safeStudents.filter((s) => s.status === 'PRESENT').length;
+  const lateCount = safeStudents.filter((s) => s.status === 'LATE').length;
+  const absentCount = safeStudents.filter((s) => s.status.includes('ABSENT')).length;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">

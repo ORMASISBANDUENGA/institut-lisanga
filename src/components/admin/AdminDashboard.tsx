@@ -17,11 +17,16 @@ import {
 export const AdminDashboard: React.FC = () => {
   const { admissions, rooms, students, classes, setActiveNavTab } = useApp();
 
-  const pendingAdmissions = admissions.filter(
+  const safeAdmissions = admissions || [];
+  const safeRooms = rooms || [];
+  const safeStudents = students || [];
+  const safeClasses = classes || [];
+
+  const pendingAdmissions = safeAdmissions.filter(
     (a) => a.status === 'SUBMITTED' || a.status === 'UNDER_REVIEW'
   );
-  const approvedAdmissions = admissions.filter((a) => a.status === 'APPROVED');
-  const availableRooms = rooms.filter((r) => r.status === 'AVAILABLE');
+  const approvedAdmissions = safeAdmissions.filter((a) => a.status === 'APPROVED');
+  const availableRooms = safeRooms.filter((r) => r.status === 'AVAILABLE');
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -80,7 +85,7 @@ export const AdminDashboard: React.FC = () => {
             <Building2 className="w-4 h-4 text-blue-600" />
           </div>
           <div className="text-3xl font-extrabold text-slate-900 mt-2">
-            {rooms.length}
+            {safeRooms.length}
           </div>
           <div className="text-xs text-blue-700 font-semibold mt-1">
             {availableRooms.length} actuellement libres

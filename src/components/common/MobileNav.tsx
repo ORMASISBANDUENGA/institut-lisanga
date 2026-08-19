@@ -33,7 +33,8 @@ export const MobileNav: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
 
-  const pendingAdmissionsCount = admissions.filter(
+  const safeAdmissions = admissions || [];
+  const pendingAdmissionsCount = safeAdmissions.filter(
     (a) => a.status === 'UNDER_REVIEW' || a.status === 'APPROVED' || a.status === 'SUBMITTED'
   ).length;
 

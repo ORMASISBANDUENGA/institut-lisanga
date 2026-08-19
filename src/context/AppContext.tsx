@@ -828,14 +828,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  const unreadNotificationsCount = notifications.filter(
+  const unreadNotificationsCount = (notifications || []).filter(
     (n) => !n.read && (!n.targetRole || n.targetRole === activeRole)
   ).length;
 
   // Matricule Generator (LIS-ANNEE-NUMERO, e.g. LIS-2026-0045)
   const generateMatricule = (academicYear = '2026-2027'): string => {
     const year = academicYear.substring(0, 4);
-    const existingCount = allStudents.length + admissions.filter(a => a.status === 'ENROLLED').length;
+    const existingCount = (allStudents || []).length + (admissions || []).filter(a => a.status === 'ENROLLED').length;
     const nextSeq = String(existingCount + 1).padStart(4, '0');
     return `LIS-${year}-${nextSeq}`;
   };

@@ -26,7 +26,7 @@ export const StudentSecurity: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const defaultSessions = currentUser.sessions || [
+  const defaultSessions = currentUser?.sessions || [
     {
       id: 'sess-1',
       deviceType: 'MOBILE',

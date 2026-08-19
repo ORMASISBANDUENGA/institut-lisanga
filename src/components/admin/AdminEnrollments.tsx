@@ -6,6 +6,10 @@ import { GitBranch, GraduationCap, Users, Calendar, Award, CheckCircle } from 'l
 export const AdminEnrollments: React.FC = () => {
   const { enrollments, students, classes } = useApp();
 
+  const safeEnrollments = enrollments || [];
+  const safeStudents = students || [];
+  const safeClasses = classes || [];
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       
@@ -29,7 +33,7 @@ export const AdminEnrollments: React.FC = () => {
             Inscriptions Actives
           </div>
           <div className="text-3xl font-extrabold text-slate-900 mt-1">
-            {enrollments.filter((e) => e.status === 'ACTIVE').length}
+            {safeEnrollments.filter((e) => e.status === 'ACTIVE').length}
           </div>
           <div className="text-xs text-slate-500 mt-1">Année académique 2026-2027</div>
         </div>
@@ -39,9 +43,9 @@ export const AdminEnrollments: React.FC = () => {
             Effectif Total Classes
           </div>
           <div className="text-3xl font-extrabold text-teal-700 mt-1">
-            {(classes || []).reduce((acc, c) => acc + (Number(c.currentEnrollment) || 0), 0)}
+            {safeClasses.reduce((acc, c) => acc + (Number(c.currentEnrollment) || 0), 0)}
           </div>
-          <div className="text-xs text-slate-500 mt-1">Sur {(classes || []).length} classes ouvertes</div>
+          <div className="text-xs text-slate-500 mt-1">Sur {safeClasses.length} classes ouvertes</div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">

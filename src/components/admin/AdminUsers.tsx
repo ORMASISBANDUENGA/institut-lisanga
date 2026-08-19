@@ -17,13 +17,14 @@ import {
 
 export const AdminUsers: React.FC = () => {
   const { userAccounts, updateUserStatus } = useApp();
+  const safeAccounts = userAccounts || [];
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('ALL');
 
-  const filteredAccounts = userAccounts.filter((u) => {
+  const filteredAccounts = safeAccounts.filter((u) => {
     const pName = u.personName || u.username || '';
     const matchesSearch =
-      u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       pName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = filterRole === 'ALL' || u.role === filterRole;
     return matchesSearch && matchesRole;

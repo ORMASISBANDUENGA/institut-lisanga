@@ -12,7 +12,8 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, 
 
   if (!isOpen) return null;
 
-  const filteredNotifs = notifications.filter(
+  const safeNotifications = notifications || [];
+  const filteredNotifs = safeNotifications.filter(
     (n) => !n.targetRole || n.targetRole === activeRole
   );
 

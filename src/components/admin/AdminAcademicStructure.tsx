@@ -27,10 +27,16 @@ export const AdminAcademicStructure: React.FC = () => {
     setActiveNavTab
   } = useApp();
 
+  const safeCycles = cycles || [];
+  const safeLevels = levels || [];
+  const safeOptions = options || [];
+  const safePromotions = promotions || [];
+  const safeClasses = classes || [];
+
   const [selectedOptionId, setSelectedOptionId] = useState<string>('opt-com');
 
-  const activeOption = (options && options.length > 0)
-    ? (options.find(o => o.id === selectedOptionId) || options[0])
+  const activeOption = (safeOptions && safeOptions.length > 0)
+    ? (safeOptions.find(o => o.id === selectedOptionId) || safeOptions[0])
     : {
         id: 'opt-com',
         code: 'COM',
@@ -202,8 +208,8 @@ export const AdminAcademicStructure: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {['1ère', '2ème', '3ème', '4ème'].map((prefix, idx) => {
             const promoLevelCode = `lvl-${idx + 1}h`;
-            const promo = promotions.find(p => p.optionId === activeOption.id && (p.levelId === promoLevelCode || p.name.startsWith(prefix)));
-            const promoClasses = classes.filter(c => promo && c.promotionId === promo.id);
+            const promo = safePromotions.find(p => p.optionId === activeOption.id && (p.levelId === promoLevelCode || p.name.startsWith(prefix)));
+            const promoClasses = safeClasses.filter(c => promo && c.promotionId === promo.id);
 
             return (
               <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-white hover:border-indigo-300 transition space-y-3">

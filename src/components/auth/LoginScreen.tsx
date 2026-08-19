@@ -869,38 +869,6 @@ export const LoginScreen: React.FC = () => {
               </div>
             </form>
           )}
-
-          {/* Institutional Credentials Reference Card */}
-          <div className="mt-4 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-700 text-xs space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-[11px] uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                <Shield className="w-3.5 h-3.5 text-[#1A3A5C]" />
-                Accès & Mots de passe par défaut
-              </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-mono font-bold">
-                Pass commun : password123
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px]">
-              <div className="p-2 rounded-xl bg-white border border-slate-200 flex items-center justify-between">
-                <span className="font-semibold text-slate-800">Direction :</span>
-                <span className="font-mono text-slate-600 font-bold">admin</span>
-              </div>
-              <div className="p-2 rounded-xl bg-white border border-slate-200 flex items-center justify-between">
-                <span className="font-semibold text-slate-800">Professeur :</span>
-                <span className="font-mono text-slate-600 font-bold">dr.kabeya</span>
-              </div>
-              <div className="p-2 rounded-xl bg-white border border-slate-200 flex items-center justify-between">
-                <span className="font-semibold text-slate-800">Parent :</span>
-                <span className="font-mono text-slate-600 font-bold">Jean BAKALAYETO</span>
-              </div>
-              <div className="p-2 rounded-xl bg-white border border-slate-200 flex items-center justify-between">
-                <span className="font-semibold text-slate-800">Élève :</span>
-                <span className="font-mono text-slate-600 font-bold">LIS-2023-0123</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 

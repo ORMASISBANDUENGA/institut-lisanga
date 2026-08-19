@@ -28,6 +28,10 @@ import {
 
 export const AdminRooms: React.FC = () => {
   const { rooms, reservations, addReservation, addRoom, updateRoom, deleteRoom } = useApp();
+
+  const safeRooms = rooms || [];
+  const safeReservations = reservations || [];
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBuilding, setFilterBuilding] = useState('ALL');
   const [filterType, setFilterType] = useState('ALL');
@@ -35,7 +39,7 @@ export const AdminRooms: React.FC = () => {
 
   // Reservation Modal State
   const [isReserveModalOpen, setIsReserveModalOpen] = useState(false);
-  const [selectedRoomId, setSelectedRoomId] = useState(rooms[0]?.id || 'room-12');
+  const [selectedRoomId, setSelectedRoomId] = useState(safeRooms[0]?.id || 'room-12');
   const [reservationDay, setReservationDay] = useState('Lundi');
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('10:00');
@@ -85,7 +89,7 @@ export const AdminRooms: React.FC = () => {
     }, 4000);
   };
 
-  const filteredRooms = rooms.filter((r) => {
+  const filteredRooms = safeRooms.filter((r) => {
     const matchesSearch =
       r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       r.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -99,8 +103,8 @@ export const AdminRooms: React.FC = () => {
   const handleOpenCreateModal = () => {
     setEditingRoomId(null);
     setRoomFormData({
-      code: `SAL-${String(rooms.length + 1).padStart(2, '0')}`,
-      name: `Salle ${rooms.length + 1}`,
+      code: `SAL-${String(safeRooms.length + 1).padStart(2, '0')}`,
+      name: `Salle ${safeRooms.length + 1}`,
       building: 'Bloc A',
       floor: '1er étage',
       capacity: 45,
@@ -213,7 +217,7 @@ export const AdminRooms: React.FC = () => {
   };
 
   // Distinct buildings list for filter
-  const allBuildings = Array.from(new Set(rooms.map((r) => r.building).filter(Boolean)));
+  const allBuildings = Array.from(new Set(safeRooms.map((r) => r.building).filter(Boolean)));
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -331,7 +335,7 @@ export const AdminRooms: React.FC = () => {
       {/* Rooms Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredRooms.map((room) => {
-          const roomReservations = reservations.filter((r) => r.roomId === room.id);
+          const roomReservations = safeReservations.filter((r) => r.roomId === room.id);
           return (
             <div
               key={room.id}

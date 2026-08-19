@@ -15,11 +15,12 @@ import { OfficialDocumentViewer } from './OfficialDocumentViewer';
 
 export const StudentGrades: React.FC = () => {
   const { grades, currentStudent, currentPerson } = useApp();
+  const safeGrades = grades || [];
   const [selectedTrimester, setSelectedTrimester] = useState<1 | 2 | 3>(1);
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string>(grades[0]?.id || 'gr-1');
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>(safeGrades[0]?.id || 'gr-1');
   const [showDocModal, setShowDocModal] = useState(false);
 
-  const filteredGrades = grades.filter((g) => g.trimester === selectedTrimester || !g.trimester);
+  const filteredGrades = safeGrades.filter((g) => g.trimester === selectedTrimester || !g.trimester);
   const selectedGrade = filteredGrades.find((g) => g.id === selectedSubjectId) || filteredGrades[0];
 
   return (
