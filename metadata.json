@@ -1,0 +1,6 @@
+{
+  "name": "Institut Lisanga",
+  "description": "Système Intégré de Gestion Scolaire pour l'Institut Lisanga à Matadi (C.O & Humanités). Portails conteneurisés Élève, Enseignant, Parent et Direction avec gestion des notes, repêchage, horaires de 45 min, barème multi-devises USD/CDF, discipline et sécurité IAM.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
