@@ -30,6 +30,9 @@ import { ParentDashboard } from './components/parent/ParentDashboard';
 
 // Admin Views
 import { AdminDashboard } from './components/admin/AdminDashboard';
+import { AdminTeachersManagement } from './components/admin/AdminTeachersManagement';
+import { AdminStudentsManagement } from './components/admin/AdminStudentsManagement';
+import { AdminParentsManagement } from './components/admin/AdminParentsManagement';
 import { AdminAdmissions } from './components/admin/AdminAdmissions';
 import { AdminRooms } from './components/admin/AdminRooms';
 import { AdminEnrollments } from './components/admin/AdminEnrollments';
@@ -109,16 +112,22 @@ const MainContent: React.FC = () => {
       }
     }
 
-    // 4. Strict Admin / Direction Guard (Admin cannot see student self-service pages)
+    // 4. Strict Admin / Direction Guard
     switch (activeNavTab) {
       case 'admin-dashboard':
         return <AdminDashboard />;
+      case 'admin-teachers':
+        return <AdminTeachersManagement />;
+      case 'admin-students':
+        return <AdminStudentsManagement />;
+      case 'admin-parents':
+        return <AdminParentsManagement />;
       case 'admin-admissions':
         return <AdminAdmissions />;
       case 'admin-rooms':
         return <AdminRooms />;
       case 'admin-enrollments':
-        return <AdminEnrollments />;
+        return <AdminStudentsManagement />;
       case 'admin-teachers-distribution':
         return <AdminTeacherDistribution />;
       case 'admin-fee-schedules':

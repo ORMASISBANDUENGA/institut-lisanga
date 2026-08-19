@@ -47,8 +47,11 @@ export interface AcademicClass {
   name: string; // "A", "B", "C"
   fullName: string; // "4ème Commerciale et Gestion A"
   capacity: number;
+  currentEnrollment?: number;
   teacherId?: string; // Titulaire
+  teacherName?: string;
   roomId?: string; // Salle assignée
+  roomName?: string;
   isActive: boolean;
   createdAt: string;
 }
@@ -139,6 +142,7 @@ export interface Person {
   phone: string;
   email: string;
   photoUrl?: string;
+  avatarUrl?: string;
   emergencyContact: {
     name: string;
     relationship: string;
@@ -156,6 +160,53 @@ export interface Student {
   enrollmentYear: string;
   person?: Person;
   name?: string;
+  gender?: 'M' | 'F';
+  birthDate?: string;
+  birthPlace?: string;
+  parentName?: string;
+  parentPhone?: string;
+  address?: string;
+  photoUrl?: string;
+}
+
+export interface Teacher {
+  id: string;
+  personId?: string;
+  matricule: string; // "ENS-LIS-001"
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  gender: 'M' | 'F';
+  phone: string;
+  email: string;
+  specialty: string; // e.g. "Mathématiques & Sciences", "Comptabilité & Gestion"
+  qualification: string; // e.g. "Licencié en Sciences Commerciales", "Agrégé ISP"
+  contractType: 'PERMANENT' | 'TEMPORAIRE' | 'VACATAIRE';
+  baseSalaryUSD: number;
+  status: 'ACTIVE' | 'ON_LEAVE' | 'RESIGNED' | 'SUSPENDED';
+  assignedClasses: string[];
+  assignedSubjects: string[];
+  hireDate: string;
+  photoUrl?: string;
+  address?: string;
+}
+
+export interface Parent {
+  id: string;
+  personId?: string;
+  matricule?: string; // "PAR-2023-001"
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  relationship: 'PERE' | 'MERE' | 'TUTEUR_LEGAL' | 'AUTRE';
+  phone: string;
+  email: string;
+  profession: string;
+  address: string;
+  linkedStudentIds: string[];
+  emergencyContact: boolean;
+  status: 'ACTIVE' | 'INACTIVE';
+  createdAt: string;
 }
 
 export interface ParentChildPermissions {
@@ -206,6 +257,7 @@ export interface UserAccount {
   personName?: string;
   username: string;
   email: string;
+  avatarUrl?: string;
   role: UserRole;
   adminSubRole?: AdminSubRole;
   status: UserStatus;

@@ -31,6 +31,8 @@ import {
   UserSession,
   SchoolSettings,
   FaceVerificationResult,
+  Teacher,
+  Parent,
 } from '../types';
 
 import {
@@ -59,6 +61,8 @@ import {
   initialScheduleSlots,
   initialPromotionFeeSchedules,
   initialDisciplineSanctions,
+  initialTeachers,
+  initialParents,
 } from '../data/initialData';
 
 export interface NotificationItem {
@@ -96,6 +100,7 @@ interface AppContextType {
   // Student Profile & Biometric Photo Verification
   updateStudentProfile: (updates: Partial<Person>) => void;
   updateStudentPhoto: (photoUrl: string) => Promise<boolean>;
+  updateUserAvatar: (avatarUrl: string, targetUserId?: string) => Promise<boolean>;
   verifyUploadedFace: (base64: string) => Promise<FaceVerificationResult>;
 
   // Multi-children for Parent view
@@ -198,8 +203,28 @@ interface AppContextType {
   // Academic Structure
   addOption: (option: Omit<Option, 'id' | 'createdAt'>) => void;
   addClass: (cls: Omit<AcademicClass, 'id' | 'createdAt'>) => void;
+  updateClass: (classId: string, updates: Partial<AcademicClass>) => void;
+  deleteClass: (classId: string) => { success: boolean; message?: string };
 
-  // Reset demo data
+  // Teacher Management Actions
+  teachers: Teacher[];
+  addTeacher: (teacher: Omit<Teacher, 'id'>) => { success: boolean; teacher: Teacher };
+  updateTeacher: (teacherId: string, updates: Partial<Teacher>) => void;
+  deleteTeacher: (teacherId: string) => { success: boolean; message?: string };
+
+  // Student Management Actions (Full CRUD)
+  addStudent: (studentData: Omit<Student, 'id'>, personData?: Partial<Person>) => { success: boolean; matricule: string; student: Student };
+  updateStudent: (studentId: string, studentUpdates: Partial<Student>, personUpdates?: Partial<Person>) => void;
+  deleteStudent: (studentId: string) => { success: boolean; message?: string };
+
+  // Parent Management Actions
+  parents: Parent[];
+  addParent: (parentData: Omit<Parent, 'id' | 'createdAt'>) => { success: boolean; parent: Parent };
+  updateParent: (parentId: string, updates: Partial<Parent>) => void;
+  deleteParent: (parentId: string) => { success: boolean; message?: string };
+
+  // Reset Application Data
+  resetSchoolToZeroData: () => void;
   resetAllData: () => void;
 }
 
@@ -434,11 +459,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
-  const [parentChildLinks] = useState<ParentChildLink[]>(initialParentChildLinks);
-  const [allStudents, setAllStudents] = useState<Student[]>([
-    referenceStudentOromasis,
-    ...otherStudents,
-  ]);
+  const [parentChildLinks, setParentChildLinks] = useState<ParentChildLink[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_parentChildLinks`);
+    return saved ? JSON.parse(saved) : initialParentChildLinks;
+  });
+
+  const [allStudents, setAllStudents] = useState<Student[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_all_students`);
+    return saved ? JSON.parse(saved) : [referenceStudentOromasis, ...otherStudents];
+  });
+
+  const [teachers, setTeachers] = useState<Teacher[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_teachers`);
+    return saved ? JSON.parse(saved) : initialTeachers;
+  });
+
+  const [parents, setParents] = useState<Parent[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_parents`);
+    return saved ? JSON.parse(saved) : initialParents;
+  });
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([
     {
@@ -500,6 +539,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(`${STORAGE_KEY}_feeSchedules`, JSON.stringify(promotionFeeSchedules));
     localStorage.setItem(`${STORAGE_KEY}_disciplineSanctions`, JSON.stringify(disciplineSanctions));
     localStorage.setItem(`${STORAGE_KEY}_exchangeRateCDF`, String(exchangeRateCDF));
+    localStorage.setItem(`${STORAGE_KEY}_all_students`, JSON.stringify(allStudents));
+    localStorage.setItem(`${STORAGE_KEY}_teachers`, JSON.stringify(teachers));
+    localStorage.setItem(`${STORAGE_KEY}_parents`, JSON.stringify(parents));
+    localStorage.setItem(`${STORAGE_KEY}_parentChildLinks`, JSON.stringify(parentChildLinks));
   }, [
     isLoggedIn,
     currentPerson,
@@ -520,6 +563,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     promotionFeeSchedules,
     disciplineSanctions,
     exchangeRateCDF,
+    allStudents,
+    teachers,
+    parents,
+    parentChildLinks,
   ]);
 
   const addAuditLog = (action: string, entity: string, entityId: string, details: string) => {
@@ -554,11 +601,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateStudentPhoto = async (photoUrl: string): Promise<boolean> => {
-    setCurrentPerson((prev) => ({
-      ...prev,
-      photoUrl,
-      updatedAt: new Date().toISOString(),
-    }));
+    setCurrentPerson((prev) => {
+      const updated = {
+        ...prev,
+        photoUrl,
+        avatarUrl: photoUrl,
+        updatedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(`${STORAGE_KEY}_person_oromasis`, JSON.stringify(updated));
+      return updated;
+    });
+
+    setUserAccounts((prev) =>
+      prev.map((u) =>
+        u.role === 'STUDENT' || u.studentId === 'student-oromasis' || u.id === currentUserId
+          ? { ...u, avatarUrl: photoUrl, updatedAt: new Date().toISOString() }
+          : u
+      )
+    );
+
+    setAllStudents((prev) =>
+      prev.map((s) =>
+        s.id === 'student-oromasis' || s.matricule === 'LIS-2023-0123'
+          ? {
+              ...s,
+              person: {
+                ...(s.person || referencePersonOromasis),
+                photoUrl,
+                avatarUrl: photoUrl,
+              },
+            }
+          : s
+      )
+    );
+
     addAuditLog('STUDENT_PHOTO_UPDATE', 'PERSON', currentPerson.id, 'Changement de la photo de profil élève.');
 
     try {
@@ -577,6 +653,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.warn('Could not sync photo to server:', e);
       return true;
     }
+  };
+
+  const updateUserAvatar = async (avatarUrl: string, targetUserId?: string): Promise<boolean> => {
+    if (activeRole === 'STUDENT') {
+      return updateStudentPhoto(avatarUrl);
+    }
+
+    const targetId = targetUserId || currentUserId;
+    setUserAccounts((prev) =>
+      prev.map((u) =>
+        (targetId && u.id === targetId) || u.role === activeRole
+          ? { ...u, avatarUrl, updatedAt: new Date().toISOString() }
+          : u
+      )
+    );
+
+    addAuditLog('USER_AVATAR_UPDATE', 'USER_ACCOUNT', targetId || 'current-user', `Mise à jour de la photo de profil pour le profil ${activeRole}`);
+    return true;
   };
 
   // Authentication & IAM workflows
@@ -1606,7 +1700,599 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString(),
     };
     setClasses((prev) => [...prev, newCls]);
-    addAuditLog('CLASS_CREATE', 'CLASS', newCls.id, `Création de la classe ${newCls.fullName}`);
+    addAuditLog('CLASS_CREATE', 'CLASS', newCls.id, `Création de la classe ${newCls.fullName} (Capacité : ${newCls.capacity})`);
+  };
+
+  const updateClass = (classId: string, updates: Partial<AcademicClass>) => {
+    const oldClass = classes.find((c) => c.id === classId);
+    if (!oldClass) return;
+
+    const mergedClass: AcademicClass = {
+      ...oldClass,
+      ...updates,
+    };
+
+    // 1. Update classes array
+    setClasses((prev) => prev.map((c) => (c.id === classId ? mergedClass : c)));
+
+    // 2. Cascade changes if class name or full name changed
+    if (oldClass.fullName !== mergedClass.fullName) {
+      setAllStudents((prev) =>
+        prev.map((s) =>
+          s.currentClassId === classId || s.currentClassName === oldClass.fullName
+            ? { ...s, currentClassId: classId, currentClassName: mergedClass.fullName }
+            : s
+        )
+      );
+
+      setScheduleSlots((prev) =>
+        prev.map((slot) =>
+          slot.classId === classId
+            ? {
+                ...slot,
+                className: mergedClass.fullName,
+                roomId: mergedClass.roomId || slot.roomId,
+              }
+            : slot
+        )
+      );
+
+      setTeacherCourseAssignments((prev) =>
+        prev.map((a) =>
+          a.classId === classId
+            ? { ...a, className: mergedClass.fullName }
+            : a
+        )
+      );
+    }
+
+    addAuditLog(
+      'CLASS_UPDATE',
+      'CLASS',
+      classId,
+      `Mise à jour complète de la classe : ${mergedClass.fullName} (Capacité : ${mergedClass.capacity}, Salle : ${mergedClass.roomId || 'non définie'}, Titulaire : ${mergedClass.teacherName || mergedClass.teacherId || 'non défini'})`
+    );
+  };
+
+  const deleteClass = (classId: string): { success: boolean; message?: string } => {
+    const targetClass = classes.find((c) => c.id === classId);
+    if (!targetClass) return { success: false, message: 'Classe introuvable.' };
+
+    const enrolledStudents = (allStudents || []).filter((s) => s.currentClassId === classId);
+    if (enrolledStudents.length > 0) {
+      setAllStudents((prev) =>
+        prev.map((s) =>
+          s.currentClassId === classId
+            ? { ...s, currentClassId: '', currentClassName: 'Non assigné' }
+            : s
+        )
+      );
+    }
+
+    setClasses((prev) => prev.filter((c) => c.id !== classId));
+    setScheduleSlots((prev) => prev.filter((s) => s.classId !== classId));
+    setTeacherCourseAssignments((prev) => prev.filter((a) => a.classId !== classId));
+
+    addAuditLog('CLASS_DELETE', 'CLASS', classId, `Suppression de la classe ${targetClass.fullName}`);
+    return { success: true };
+  };
+
+  // ==========================================
+  // TEACHER CRUD ACTIONS (Master Control)
+  // ==========================================
+  const addTeacher = (teacherData: Omit<Teacher, 'id'>): { success: boolean; teacher: Teacher } => {
+    const newId = `teacher-${Date.now()}`;
+    const count = teachers.length + 1;
+    const matricule = teacherData.matricule || `ENS-2026-${String(count).padStart(3, '0')}`;
+    const fullName = teacherData.fullName || `${teacherData.firstName} ${teacherData.lastName}`;
+    const newTeacher: Teacher = {
+      ...teacherData,
+      id: newId,
+      matricule,
+      fullName,
+      assignedClasses: teacherData.assignedClasses || [],
+      assignedSubjects: teacherData.assignedSubjects || [],
+      status: teacherData.status || 'ACTIVE',
+      hireDate: teacherData.hireDate || new Date().toISOString().split('T')[0],
+    };
+
+    setTeachers((prev) => [newTeacher, ...prev]);
+
+    setUserAccounts((prev) => [
+      {
+        id: `user-${newId}`,
+        username: matricule.toLowerCase(),
+        email: newTeacher.email,
+        role: 'TEACHER',
+        status: 'ACTIVE',
+        teacherId: newId,
+        passwordHash: '$argon2id$v=19$m=65536,t=3,p=4$teacherDefault...',
+        mustChangePassword: false,
+        twoFactorEnabled: false,
+        sessions: [],
+        lastLogin: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      ...prev,
+    ]);
+
+    addAuditLog(
+      'TEACHER_CREATE',
+      'TEACHER',
+      newId,
+      `Création de l'enseignant : ${fullName} (${matricule}) - Spécialité : ${newTeacher.specialty}`
+    );
+
+    return { success: true, teacher: newTeacher };
+  };
+
+  const updateTeacher = (teacherId: string, updates: Partial<Teacher>) => {
+    const currentTeacher = teachers.find((t) => t.id === teacherId);
+    if (!currentTeacher) return;
+
+    const mergedFullName = updates.fullName || (updates.firstName && updates.lastName ? `${updates.firstName} ${updates.lastName}` : currentTeacher.fullName);
+
+    const updatedTeacher: Teacher = {
+      ...currentTeacher,
+      ...updates,
+      fullName: mergedFullName,
+    };
+
+    setTeachers((prev) => prev.map((t) => (t.id === teacherId ? updatedTeacher : t)));
+
+    if (mergedFullName !== currentTeacher.fullName) {
+      setClasses((prev) =>
+        prev.map((c) =>
+          c.teacherId === teacherId || c.teacherName === currentTeacher.fullName
+            ? { ...c, teacherName: mergedFullName }
+            : c
+        )
+      );
+      setTeacherCourseAssignments((prev) =>
+        prev.map((a) =>
+          a.teacherId === teacherId || a.teacherName === currentTeacher.fullName
+            ? { ...a, teacherName: mergedFullName }
+            : a
+        )
+      );
+      setScheduleSlots((prev) =>
+        prev.map((s) =>
+          s.teacherName === currentTeacher.fullName
+            ? { ...s, teacherName: mergedFullName }
+            : s
+        )
+      );
+    }
+
+    if (updates.email || updates.matricule) {
+      setUserAccounts((prev) =>
+        prev.map((u) =>
+          u.teacherId === teacherId
+            ? {
+                ...u,
+                email: updates.email || u.email,
+                username: (updates.matricule || u.username).toLowerCase(),
+              }
+            : u
+        )
+      );
+    }
+
+    addAuditLog(
+      'TEACHER_UPDATE',
+      'TEACHER',
+      teacherId,
+      `Mise à jour complète de l'enseignant ${mergedFullName} (${updatedTeacher.matricule})`
+    );
+  };
+
+  const deleteTeacher = (teacherId: string): { success: boolean; message?: string } => {
+    const targetTeacher = teachers.find((t) => t.id === teacherId);
+    if (!targetTeacher) return { success: false, message: 'Enseignant introuvable.' };
+
+    setTeachers((prev) => prev.filter((t) => t.id !== teacherId));
+    setUserAccounts((prev) => prev.filter((u) => u.teacherId !== teacherId));
+    setTeacherCourseAssignments((prev) => prev.filter((a) => a.teacherId !== teacherId));
+    setClasses((prev) =>
+      prev.map((c) =>
+        c.teacherId === teacherId ? { ...c, teacherId: undefined, teacherName: undefined } : c
+      )
+    );
+
+    addAuditLog(
+      'TEACHER_DELETE',
+      'TEACHER',
+      teacherId,
+      `Suppression de l'enseignant ${targetTeacher.fullName} (${targetTeacher.matricule})`
+    );
+
+    return { success: true };
+  };
+
+  // ==========================================
+  // STUDENT CRUD ACTIONS (Master Control)
+  // ==========================================
+  const addStudent = (studentData: Omit<Student, 'id'>, personData?: Partial<Person>): { success: boolean; matricule: string; student: Student } => {
+    const newId = `student-${Date.now()}`;
+    const count = allStudents.length + 1;
+    const matricule = studentData.matricule || `LIS-2026-${String(count).padStart(4, '0')}`;
+    const personName = studentData.name || (personData ? `${personData.firstName} ${personData.lastName}` : `Élève ${count}`);
+
+    const assignedClass = classes.find((c) => c.id === studentData.currentClassId);
+    const className = studentData.currentClassName || assignedClass?.fullName || 'Non assigné';
+
+    const newStudent: Student = {
+      ...studentData,
+      id: newId,
+      personId: `person-${newId}`,
+      matricule,
+      name: personName,
+      currentClassName: className,
+      status: studentData.status || 'ACTIVE',
+      enrollmentYear: studentData.enrollmentYear || '2026-2027',
+    };
+
+    setAllStudents((prev) => [newStudent, ...prev]);
+
+    if (studentData.currentClassId) {
+      setClasses((prev) =>
+        prev.map((c) =>
+          c.id === studentData.currentClassId
+            ? { ...c, currentEnrollment: (Number(c.currentEnrollment) || 0) + 1 }
+            : c
+        )
+      );
+    }
+
+    setEnrollments((prev) => [
+      {
+        id: `enr-${newId}`,
+        studentId: newId,
+        academicYear: newStudent.enrollmentYear,
+        promotionId: assignedClass?.promotionId || 'promo-default',
+        enrollmentDate: new Date().toISOString(),
+        status: 'ACTIVE',
+      },
+      ...prev,
+    ]);
+
+    setUserAccounts((prev) => [
+      {
+        id: `user-${newId}`,
+        personId: `person-${newId}`,
+        username: matricule,
+        email: `${matricule.toLowerCase()}@lisanga.edu.cd`,
+        role: 'STUDENT',
+        status: 'ACTIVE',
+        studentId: newId,
+        passwordHash: '$argon2id$v=19$m=65536,t=3,p=4$studentDefault...',
+        mustChangePassword: false,
+        twoFactorEnabled: false,
+        sessions: [],
+        lastLogin: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      ...prev,
+    ]);
+
+    addAuditLog(
+      'STUDENT_CREATE',
+      'STUDENT',
+      newId,
+      `Ajout de l'élève : ${personName} (${matricule}) assigné à la classe ${className}`
+    );
+
+    return { success: true, matricule, student: newStudent };
+  };
+
+  const updateStudent = (studentId: string, studentUpdates: Partial<Student>, personUpdates?: Partial<Person>) => {
+    const currentStud = allStudents.find((s) => s.id === studentId);
+    if (!currentStud) return;
+
+    const previousClassId = currentStud.currentClassId;
+    const newClassId = studentUpdates.currentClassId !== undefined ? studentUpdates.currentClassId : previousClassId;
+    
+    const assignedClass = classes.find((c) => c.id === newClassId);
+    const resolvedClassName = studentUpdates.currentClassName || assignedClass?.fullName || (newClassId ? currentStud.currentClassName : 'Non assigné');
+
+    const mergedName = studentUpdates.name || (personUpdates ? `${personUpdates.firstName} ${personUpdates.lastName}` : currentStud.name);
+
+    const updatedStudent: Student = {
+      ...currentStud,
+      ...studentUpdates,
+      name: mergedName,
+      currentClassId: newClassId,
+      currentClassName: resolvedClassName,
+    };
+
+    setAllStudents((prev) => prev.map((s) => (s.id === studentId ? updatedStudent : s)));
+
+    if (studentId === 'student-oromasis' && personUpdates) {
+      setCurrentPerson((prev) => ({ ...prev, ...personUpdates }));
+    }
+
+    if (previousClassId !== newClassId) {
+      setClasses((prev) =>
+        prev.map((c) => {
+          if (c.id === previousClassId) {
+            return { ...c, currentEnrollment: Math.max(0, (Number(c.currentEnrollment) || 0) - 1) };
+          }
+          if (c.id === newClassId) {
+            return { ...c, currentEnrollment: (Number(c.currentEnrollment) || 0) + 1 };
+          }
+          return c;
+        })
+      );
+    }
+
+    if (studentUpdates.matricule) {
+      setUserAccounts((prev) =>
+        prev.map((u) =>
+          u.studentId === studentId
+            ? { ...u, username: studentUpdates.matricule!, email: `${studentUpdates.matricule!.toLowerCase()}@lisanga.edu.cd` }
+            : u
+        )
+      );
+    }
+
+    addAuditLog(
+      'STUDENT_UPDATE',
+      'STUDENT',
+      studentId,
+      `Mise à jour complète de l'élève : ${mergedName} (${updatedStudent.matricule}) - Classe : ${resolvedClassName}`
+    );
+  };
+
+  const deleteStudent = (studentId: string): { success: boolean; message?: string } => {
+    const targetStudent = allStudents.find((s) => s.id === studentId);
+    if (!targetStudent) return { success: false, message: 'Élève introuvable.' };
+
+    if (targetStudent.currentClassId) {
+      setClasses((prev) =>
+        prev.map((c) =>
+          c.id === targetStudent.currentClassId
+            ? { ...c, currentEnrollment: Math.max(0, (Number(c.currentEnrollment) || 0) - 1) }
+            : c
+        )
+      );
+    }
+
+    setAllStudents((prev) => prev.filter((s) => s.id !== studentId));
+    setUserAccounts((prev) => prev.filter((u) => u.studentId !== studentId));
+    setGrades((prev) => prev.filter((g) => g.studentId !== studentId));
+    setAttendances((prev) => prev.filter((a) => a.studentId !== studentId));
+    setPayments((prev) => prev.filter((p) => p.studentId !== studentId));
+    setEnrollments((prev) => prev.filter((e) => e.studentId !== studentId));
+    setParentChildLinks((prev) => prev.filter((l) => l.studentId !== studentId));
+
+    setParents((prev) =>
+      prev.map((p) => ({
+        ...p,
+        linkedStudentIds: p.linkedStudentIds.filter((id) => id !== studentId),
+      }))
+    );
+
+    addAuditLog(
+      'STUDENT_DELETE',
+      'STUDENT',
+      studentId,
+      `Suppression de l'élève ${targetStudent.name || targetStudent.matricule} (${targetStudent.matricule})`
+    );
+
+    return { success: true };
+  };
+
+  // ==========================================
+  // PARENT CRUD ACTIONS (Master Control)
+  // ==========================================
+  const addParent = (parentData: Omit<Parent, 'id' | 'createdAt'>): { success: boolean; parent: Parent } => {
+    const newId = `parent-acc-${Date.now()}`;
+    const count = parents.length + 1;
+    const matricule = parentData.matricule || `PAR-2026-${String(count).padStart(3, '0')}`;
+    const fullName = parentData.fullName || `${parentData.firstName} ${parentData.lastName}`;
+
+    const newParent: Parent = {
+      ...parentData,
+      id: newId,
+      matricule,
+      fullName,
+      status: parentData.status || 'ACTIVE',
+      linkedStudentIds: parentData.linkedStudentIds || [],
+      createdAt: new Date().toISOString(),
+    };
+
+    setParents((prev) => [newParent, ...prev]);
+
+    if (newParent.linkedStudentIds.length > 0) {
+      const newLinks: ParentChildLink[] = newParent.linkedStudentIds.map((studentId, idx) => ({
+        id: `pcl-${newId}-${studentId}`,
+        parentAccountId: newId,
+        studentId,
+        relationship: newParent.relationship,
+        isPrimary: idx === 0,
+        isEmergencyContact: newParent.emergencyContact,
+        priorityOrder: idx + 1,
+        permissions: {
+          canViewGrades: true,
+          canViewAttendance: true,
+          canViewPayments: true,
+          canReceiveNotifications: true,
+          canMessageTeachers: true,
+          canUpdateProfile: false,
+        },
+      }));
+      setParentChildLinks((prev) => [...prev, ...newLinks]);
+    }
+
+    setUserAccounts((prev) => [
+      {
+        id: `user-${newId}`,
+        username: `${newParent.firstName.toLowerCase()}.${newParent.lastName.toLowerCase()}`,
+        email: newParent.email,
+        role: 'PARENT',
+        status: 'ACTIVE',
+        parentAccountId: newId,
+        passwordHash: '$argon2id$v=19$m=65536,t=3,p=4$parentDefault...',
+        mustChangePassword: false,
+        twoFactorEnabled: false,
+        sessions: [],
+        lastLogin: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      ...prev,
+    ]);
+
+    addAuditLog(
+      'PARENT_CREATE',
+      'PARENT',
+      newId,
+      `Création du compte responsable : ${fullName} (${newParent.relationship}) - Tél: ${newParent.phone}`
+    );
+
+    return { success: true, parent: newParent };
+  };
+
+  const updateParent = (parentId: string, updates: Partial<Parent>) => {
+    const currentParent = parents.find((p) => p.id === parentId);
+    if (!currentParent) return;
+
+    const mergedFullName = updates.fullName || (updates.firstName && updates.lastName ? `${updates.firstName} ${updates.lastName}` : currentParent.fullName);
+
+    const updatedParent: Parent = {
+      ...currentParent,
+      ...updates,
+      fullName: mergedFullName,
+    };
+
+    setParents((prev) => prev.map((p) => (p.id === parentId ? updatedParent : p)));
+
+    if (updates.linkedStudentIds) {
+      setParentChildLinks((prev) => {
+        const filtered = prev.filter((l) => l.parentAccountId !== parentId);
+        const newLinks: ParentChildLink[] = updates.linkedStudentIds!.map((studentId, idx) => ({
+          id: `pcl-${parentId}-${studentId}`,
+          parentAccountId: parentId,
+          studentId,
+          relationship: updatedParent.relationship,
+          isPrimary: idx === 0,
+          isEmergencyContact: updatedParent.emergencyContact,
+          priorityOrder: idx + 1,
+          permissions: {
+            canViewGrades: true,
+            canViewAttendance: true,
+            canViewPayments: true,
+            canReceiveNotifications: true,
+            canMessageTeachers: true,
+            canUpdateProfile: false,
+          },
+        }));
+        return [...filtered, ...newLinks];
+      });
+    }
+
+    if (updates.email) {
+      setUserAccounts((prev) =>
+        prev.map((u) => (u.parentAccountId === parentId ? { ...u, email: updates.email! } : u))
+      );
+    }
+
+    addAuditLog(
+      'PARENT_UPDATE',
+      'PARENT',
+      parentId,
+      `Mise à jour complète du responsable : ${mergedFullName}`
+    );
+  };
+
+  const deleteParent = (parentId: string): { success: boolean; message?: string } => {
+    const targetParent = parents.find((p) => p.id === parentId);
+    if (!targetParent) return { success: false, message: 'Responsable introuvable.' };
+
+    setParents((prev) => prev.filter((p) => p.id !== parentId));
+    setUserAccounts((prev) => prev.filter((u) => u.parentAccountId !== parentId));
+    setParentChildLinks((prev) => prev.filter((l) => l.parentAccountId !== parentId));
+
+    addAuditLog(
+      'PARENT_DELETE',
+      'PARENT',
+      parentId,
+      `Suppression du responsable ${targetParent.fullName}`
+    );
+
+    return { success: true };
+  };
+
+  // ==========================================
+  // HARD RESET (Remise à Zéro Totale)
+  // ==========================================
+  const resetSchoolToZeroData = () => {
+    setAllStudents([]);
+    setTeachers([]);
+    setParents([]);
+    setTeacherCourseAssignments([]);
+    setParentChildLinks([]);
+    setGrades([]);
+    setAttendances([]);
+    setPayments([]);
+    setAdmissions([]);
+    setDisciplineSanctions([]);
+    setReservations([]);
+    setScheduleSlots([]);
+    setEnrollments([]);
+    setClassAssignments([]);
+
+    setClasses((prev) =>
+      prev.map((c) => ({
+        ...c,
+        currentEnrollment: 0,
+        teacherId: undefined,
+        teacherName: undefined,
+      }))
+    );
+
+    setUserAccounts((prev) => {
+      const adminAccounts = prev.filter((u) => u.role === 'ADMIN' || u.role === 'SUPER_ADMIN');
+      if (adminAccounts.length === 0) {
+        return [initialUsers.find((u) => u.role === 'ADMIN') || initialUsers[3]];
+      }
+      return adminAccounts;
+    });
+
+    setActiveRole('ADMIN');
+    setActiveNavTab('admin-dashboard');
+
+    const zeroLog: AuditLog = {
+      id: `log-zero-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      userId: 'user-admin',
+      userName: 'Direction Lisanga - Matadi',
+      userRole: 'ADMIN',
+      action: 'HARD_RESET_ZERO',
+      entity: 'SYSTEM',
+      entityId: 'school-lisanga',
+      details: 'RÉINITIALISATION TOTALE : Toutes les données élèves, enseignants, parents, notes et paiements ont été remises à zéro par la Direction.',
+    };
+    setAuditLogs([zeroLog]);
+
+    localStorage.setItem(`${STORAGE_KEY}_all_students`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_KEY}_teachers`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_KEY}_parents`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_KEY}_teacherAssignments`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_KEY}_parentChildLinks`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_KEY}_grades`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_KEY}_attendances`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_KEY}_payments`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_KEY}_admissions`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_KEY}_disciplineSanctions`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_KEY}_reservations`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_KEY}_scheduleSlots`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_KEY}_enrollments`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_KEY}_classAssignments`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_KEY}_logs`, JSON.stringify([zeroLog]));
+    localStorage.setItem(`${STORAGE_KEY}_active_role`, 'ADMIN');
   };
 
   const resetAllData = () => {
@@ -1615,10 +2301,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Helpers
-  const currentUser = userAccounts.find((u) => u.role === activeRole) || userAccounts[0];
-  const currentStudent = {
-    ...referenceStudentOromasis,
-    name: currentPerson.fullName,
+  const currentUser = userAccounts.find((u) => u.role === activeRole) || userAccounts[0] || initialUsers[3];
+  const currentStudent = allStudents.find((s) => s.id === 'student-oromasis') || allStudents[0] || {
+    id: 'student-empty',
+    personId: 'person-empty',
+    matricule: 'LIS-VIDE',
+    currentClassId: '',
+    currentClassName: 'Aucune classe',
+    status: 'ACTIVE' as const,
+    enrollmentYear: '2026-2027',
+    name: currentPerson?.fullName || 'Aucun élève',
   };
   const academicStructure = {
     cycles,
@@ -1651,6 +2343,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         verifyUploadedFace,
         updateStudentProfile,
         updateStudentPhoto,
+        updateUserAvatar,
         selectedChildId,
         setSelectedChildId,
         parentChildLinks,
@@ -1714,6 +2407,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         activateParentAccount,
         addOption,
         addClass,
+        updateClass,
+        deleteClass,
+        teachers,
+        addTeacher,
+        updateTeacher,
+        deleteTeacher,
+        addStudent,
+        updateStudent,
+        deleteStudent,
+        parents,
+        addParent,
+        updateParent,
+        deleteParent,
+        resetSchoolToZeroData,
         resetAllData,
       }}
     >

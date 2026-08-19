@@ -10,6 +10,7 @@ import {
   BookOpen,
   ClipboardCheck,
   Building2,
+  Users,
   Users2,
   GitBranch,
   ShieldCheck,
@@ -155,21 +156,28 @@ export const Sidebar: React.FC = () => {
             groupTitle: 'DIRECTION',
             items: [
               { id: 'admin-dashboard', label: 'Tableau de bord général', icon: <LayoutDashboard className="w-4 h-4" /> },
-              {
-                id: 'admin-admissions',
-                label: 'Workflow Admissions',
-                icon: <FolderKanban className="w-4 h-4" />,
-                badge: pendingAdmissionsCount > 0 ? pendingAdmissionsCount : undefined,
-              },
             ],
           },
           {
-            groupTitle: 'GESTION ACADÉMIQUE',
+            groupTitle: '3 CONTENEURS DE GESTION',
             items: [
-              { id: 'admin-enrollments', label: 'Inscriptions & Élèves', icon: <GitBranch className="w-4 h-4" /> },
+              { id: 'admin-teachers', label: '1. Gestion des Enseignants', icon: <Users className="w-4 h-4 text-purple-400" /> },
+              { id: 'admin-students', label: '2. Gestion des Élèves', icon: <GraduationCap className="w-4 h-4 text-blue-400" /> },
+              { id: 'admin-parents', label: '3. Gestion des Parents', icon: <Users2 className="w-4 h-4 text-emerald-400" /> },
+            ],
+          },
+          {
+            groupTitle: 'STRUCTURE & ACADÉMIQUE',
+            items: [
+              { id: 'admin-structure', label: 'Structure & Classes (CRUD)', icon: <CheckCircle className="w-4 h-4" /> },
               { id: 'admin-teachers-distribution', label: 'Attribution des Cours', icon: <UserCheck className="w-4 h-4" /> },
               { id: 'admin-rooms', label: 'Gestion des Salles (ROOM)', icon: <Building2 className="w-4 h-4" /> },
-              { id: 'admin-structure', label: 'Structure & Options', icon: <CheckCircle className="w-4 h-4" /> },
+              {
+                id: 'admin-admissions',
+                label: 'Candidatures & Admissions',
+                icon: <FolderKanban className="w-4 h-4" />,
+                badge: pendingAdmissionsCount > 0 ? pendingAdmissionsCount : undefined,
+              },
             ],
           },
           {
@@ -177,7 +185,7 @@ export const Sidebar: React.FC = () => {
             items: [
               { id: 'admin-fee-schedules', label: 'Barème des Frais', icon: <DollarSign className="w-4 h-4" /> },
               { id: 'admin-settings', label: 'Configuration Établissement', icon: <Building2 className="w-4 h-4 text-emerald-400" /> },
-              { id: 'admin-users', label: 'Comptes & Statuts IAM', icon: <ShieldCheck className="w-4 h-4" /> },
+              { id: 'admin-users', label: 'Comptes Utilisateurs IAM', icon: <ShieldCheck className="w-4 h-4" /> },
               { id: 'admin-audit', label: 'Journal d’Audit & Sécurité', icon: <History className="w-4 h-4" /> },
             ],
           },

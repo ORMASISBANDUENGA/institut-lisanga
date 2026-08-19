@@ -35,11 +35,11 @@ export const Header: React.FC = () => {
   > = {
     STUDENT: {
       label: `${currentPerson.lastName} ${currentPerson.postName} ${currentPerson.firstName}`,
-      subLabel: `${currentStudent.currentClassName} • ${currentStudent.permanentStudentNumber}`,
+      subLabel: `${currentStudent.currentClassName} • ${currentStudent.permanentStudentNumber || currentStudent.matricule}`,
       roleTag: 'Portail Élève',
       icon: <GraduationCap className="w-4 h-4 text-emerald-600" />,
       badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-300',
-      avatar: currentPerson.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
+      avatar: currentPerson.photoUrl || currentPerson.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
     },
     TEACHER: {
       label: 'Dr. KABEYA Tshilumba',
@@ -76,6 +76,10 @@ export const Header: React.FC = () => {
   };
 
   const currentConfig = roleConfigs[activeRole] || roleConfigs.ADMIN;
+  const activeAvatar =
+    activeRole === 'STUDENT'
+      ? (currentPerson.photoUrl || currentPerson.avatarUrl || currentConfig.avatar)
+      : currentConfig.avatar;
 
   return (
     <>
@@ -144,11 +148,19 @@ export const Header: React.FC = () => {
               </button>
 
               {/* Active Profile Info */}
-              <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200">
+              <button
+                id="header-user-profile-btn"
+                onClick={() => {
+                  if (activeRole === 'STUDENT') setActiveNavTab('student-profile');
+                  else if (activeRole === 'ADMIN') setActiveNavTab('admin-users');
+                }}
+                className="flex items-center gap-2.5 pl-2 border-l border-slate-200 hover:opacity-80 transition text-left cursor-pointer"
+                title="Consulter le profil utilisateur"
+              >
                 <img
-                  src={currentConfig.avatar}
+                  src={activeAvatar}
                   alt={currentConfig.label}
-                  className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-xs"
+                  className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-xs ring-1 ring-slate-200"
                 />
                 <div className="hidden lg:block text-left">
                   <div className="text-xs font-bold text-slate-900 leading-tight">
@@ -159,7 +171,7 @@ export const Header: React.FC = () => {
                     {currentConfig.subLabel}
                   </div>
                 </div>
-              </div>
+              </button>
 
               {/* Deconnexion Button */}
               <button
